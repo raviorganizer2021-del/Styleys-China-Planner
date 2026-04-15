@@ -327,6 +327,21 @@ tr:hover td{background:#fdf9ff}
           <select id="rw-cat" style="padding:6px 10px;border-radius:6px;border:1.5px solid #d4c5f0;font-size:12px" onchange="renderRunwayTable()">
             <option value="">All Categories</option>
           </select>
+          <select id="rw-sort" style="padding:6px 10px;border-radius:6px;border:1.5px solid #d4c5f0;font-size:12px" onchange="renderRunwayTable()">
+            <option value="priority">Sort: Priority</option>
+            <option value="days_asc">Sort: Days Left (Low to High)</option>
+            <option value="days_desc">Sort: Days Left (High to Low)</option>
+            <option value="order_desc">Sort: Order Qty (High to Low)</option>
+            <option value="order_asc">Sort: Order Qty (Low to High)</option>
+            <option value="stock_asc">Sort: Stock (Low to High)</option>
+            <option value="stock_desc">Sort: Stock (High to Low)</option>
+            <option value="sales_desc">Sort: Avg Sales (High to Low)</option>
+            <option value="sales_asc">Sort: Avg Sales (Low to High)</option>
+            <option value="sku_asc">Sort: SKU (A-Z)</option>
+            <option value="sku_desc">Sort: SKU (Z-A)</option>
+            <option value="name_asc">Sort: Name (A-Z)</option>
+            <option value="name_desc">Sort: Name (Z-A)</option>
+          </select>
         </div>
       </div>
 
@@ -831,6 +846,59 @@ function renderRunwayTable(){
     const mf=!filt||(filt==='order'&&r.orderQty>0)||r.urgency===filt;
     const mc=!cat||r.category===cat;
     return ms&&mf&&mc;
+  });
+
+  const sortBy=document.getElementById('rw-sort')?.value||'priority';
+  const urgencyRank={critical:0,urgent:1,warning:2,safe:3,nodata:4};
+  const textVal=v=>String(v||'').toLowerCase();
+  const compareText=(a,b,field,dir='asc')=>dir==='asc'
+    ? textVal(a[field]).localeCompare(textVal(b[field]))
+    : textVal(b[field]).localeCompare(textVal(a[field]));
+  const compareNum=(a,b,field,dir='asc',nullLast=true)=>{
+    const av=a[field], bv=b[field];
+    if(nullLast){
+      const an=av===null||av===undefined||av==='';
+      const bn=bv===null||bv===undefined||bv==='';
+      if(an&&bn) return 0;
+      if(an) return 1;
+      if(bn) return -1;
+    }
+    return dir==='asc'?Number(av)-Number(bv):Number(bv)-Number(av);
+  };
+
+  data.sort((a,b)=>{
+    switch(sortBy){
+      case 'days_asc':
+        return compareNum(a,b,'daysLeft','asc');
+      case 'days_desc':
+        return compareNum(a,b,'daysLeft','desc');
+      case 'order_desc':
+        return compareNum(a,b,'orderQty','desc')||urgencyRank[a.urgency]-urgencyRank[b.urgency];
+      case 'order_asc':
+        return compareNum(a,b,'orderQty','asc')||urgencyRank[a.urgency]-urgencyRank[b.urgency];
+      case 'stock_asc':
+        return compareNum(a,b,'qty','asc')||urgencyRank[a.urgency]-urgencyRank[b.urgency];
+      case 'stock_desc':
+        return compareNum(a,b,'qty','desc')||urgencyRank[a.urgency]-urgencyRank[b.urgency];
+      case 'sales_desc':
+        return compareNum(a,b,'avgM','desc')||urgencyRank[a.urgency]-urgencyRank[b.urgency];
+      case 'sales_asc':
+        return compareNum(a,b,'avgM','asc')||urgencyRank[a.urgency]-urgencyRank[b.urgency];
+      case 'sku_asc':
+        return compareText(a,b,'sku','asc');
+      case 'sku_desc':
+        return compareText(a,b,'sku','desc');
+      case 'name_asc':
+        return compareText(a,b,'itemName','asc');
+      case 'name_desc':
+        return compareText(a,b,'itemName','desc');
+      case 'priority':
+      default:
+        return (urgencyRank[a.urgency]-urgencyRank[b.urgency])
+          || compareNum(a,b,'daysLeft','asc')
+          || compareNum(a,b,'orderQty','desc',false)
+          || compareText(a,b,'sku','asc');
+    }
   });
 
   const tbody=document.getElementById('runway-tbody');
