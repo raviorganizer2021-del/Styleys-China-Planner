@@ -150,7 +150,7 @@ tr:hover td{background:#fdf9ff}
     </div>
     <div class="fg"><label>Supabase Project URL</label><input id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"/></div>
     <div class="fg"><label>Supabase Anon Key</label><input id="sb-key" placeholder="eyJhbGci..."/></div>
-    <button class="btn btn-dark" style="width:100%;padding:12px;margin-top:8px;font-size:14px" onclick="connectDB()">🚀 Launch Planner</button>
+    <button type="button" class="btn btn-dark" style="width:100%;padding:12px;margin-top:8px;font-size:14px" onclick="connectDB()">🚀 Launch Planner</button>
     <div id="setup-err" style="color:#c0392b;font-size:12px;margin-top:8px;text-align:center"></div>
     <div style="margin-top:20px;background:#f5f0ff;border-radius:8px;padding:12px;font-size:11px;color:#666;line-height:1.8">
       <b>Supabase mein yeh SQL run karo (ek baar):</b><br>
@@ -485,14 +485,36 @@ function loadCfg(){
 
 function connectDB(){
   const u=document.getElementById('sb-url').value.trim(),k=document.getElementById('sb-key').value.trim();
-  if(!u||!k){document.getElementById('setup-err').textContent='Dono fields bharo.';return;}
-  localStorage.setItem('sb_url_china',u);localStorage.setItem('sb_key_china',k);launch(u,k);
+  const errEl=document.getElementById('setup-err');
+  errEl.textContent='';
+  if(!u||!k){errEl.textContent='Dono fields bharo.';return;}
+  if(!window.supabase || !window.supabase.createClient){
+    errEl.textContent='Supabase library load nahi hui. Internet connection check karo.';
+    return;
+  }
+  errEl.textContent='Connecting...';
+  try{
+    localStorage.setItem('sb_url_china',u);
+    localStorage.setItem('sb_key_china',k);
+    launch(u,k);
+  }catch(e){
+    errEl.textContent='Launch error: '+(e.message||e);
+    console.error(e);
+  }
 }
 async function launch(u,k){
-  sb=window.supabase.createClient(u,k);
-  document.getElementById('setup-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  await loadAll();
+  try{
+    sb=window.supabase.createClient(u,k);
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    await loadAll();
+    document.getElementById('setup-err').textContent='';
+  }catch(e){
+    document.getElementById('setup-err').textContent='Error connecting: '+(e.message||e);
+    document.getElementById('setup-screen').style.display='block';
+    document.getElementById('app').style.display='none';
+    console.error(e);
+  }
 }
 function logout(){localStorage.removeItem('sb_url_china');localStorage.removeItem('sb_key_china');location.reload();}
 
