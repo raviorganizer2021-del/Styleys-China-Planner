@@ -859,7 +859,7 @@ function renderRunwayTable(){
       <td style="text-align:center;font-weight:700;color:${qtyColor}">${r.qty} <span style="font-size:11px;color:#aaa">${r.unit}</span></td>
       <td style="text-align:center">${r.avgM||'—'}</td>
       <td style="text-align:center;font-size:12px;color:#888">${r.avgM>0?r.dailyAvg:'—'}</td>
-      <td style="text-align:center">${r.daysLeft!==null?`<b>${r.daysLeft}</b>`:—}</td>
+      <td style="text-align:center">${r.daysLeft!==null?`<b>${r.daysLeft}</b>`:'—'}</td>
       <td style="text-align:center;color:#6c3fc5">${r.targetStock} ${r.unit}</td>
       <td style="text-align:center;font-size:12px;color:#888">${r.avgM>0?r.leadBuffer+' '+r.unit:'—'}</td>
       <td style="text-align:center">
