@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🇨🇳 China Procurement Planner — Styleys India LLP</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.0/papaparse.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0eef8;color:#222;min-height:100vh}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 12px rgba(0,0,0,0.3)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-brand{color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
+.hdr-flag{font-size:22px}
+.hdr-title{color:rgba(255,255,255,0.8);font-size:12px;border-left:1px solid rgba(255,255,255,0.2);padding-left:12px;margin-left:4px}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.hdr-chip{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px}
+
+/* TABS */
+.tabs{background:#fff;border-bottom:2px solid #e8e0f5;display:flex;padding:0 24px;gap:4px}
+.tab-btn{padding:14px 20px;border:none;background:none;font-size:13px;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s}
+.tab-btn:hover{color:#6c3fc5}
+.tab-btn.active{color:#6c3fc5;border-bottom-color:#6c3fc5}
+.tab-badge{background:#e74c3c;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:5px}
+
+/* MAIN */
+.main{padding:24px;max-width:1400px;margin:0 auto}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.sum-card{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.07);border-top:4px solid transparent}
+.sum-card.red{border-top-color:#e74c3c}
+.sum-card.orange{border-top-color:#e67e22}
+.sum-card.yellow{border-top-color:#f39c12}
+.sum-card.green{border-top-color:#27ae60}
+.sum-card.purple{border-top-color:#6c3fc5}
+.sum-card.blue{border-top-color:#2980b9}
+.sum-label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+.sum-value{font-size:26px;font-weight:800;color:#222}
+.sum-sub{font-size:11px;color:#aaa;margin-top:4px}
+
+/* CARDS */
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:20px}
+.card-title{font-size:14px;font-weight:700;color:#333;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #f0f0f0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:11px 13px;text-align:left;font-weight:600;color:#666;background:#fafafa;white-space:nowrap;border-bottom:1px solid #eee}
+td{padding:10px 13px;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fdf9ff}
+
+/* PRIORITY BADGES */
+.p-critical{background:#fdecea;color:#c0392b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-urgent{background:#fdf2e9;color:#d35400;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-warning{background:#fefde6;color:#b7950b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-safe{background:#e9f7ef;color:#1e8449;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-nodata{background:#f5f5f5;color:#aaa;padding:3px 10px;border-radius:20px;font-size:11px}
+
+/* STATUS BADGES */
+.s-pending{background:#fdf2e9;color:#d35400;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.s-confirmed{background:#eaf4fb;color:#1a5276;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.s-ordered{background:#f0eaf9;color:#6c3fc5;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.s-shipped{background:#fef9e7;color:#7d6608;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.s-received{background:#e9f7ef;color:#1e8449;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.s-cancelled{background:#fdecea;color:#c0392b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.btn-primary{background:#6c3fc5;color:#fff}.btn-primary:hover{background:#5a32a3}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-danger{background:#fdecea;color:#c0392b;border:1px solid #f5c6c6}
+.btn-secondary{background:#f5f0ff;color:#6c3fc5;border:1px solid #d4c5f0}
+.btn-outline{background:#fff;color:#6c3fc5;border:1.5px solid #6c3fc5}.btn-outline:hover{background:#f5f0ff}
+.btn-dark{background:#1a1a2e;color:#fff}.btn-dark:hover{background:#16213e}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+.btn-icon{padding:5px 8px;font-size:13px;border-radius:6px}
+
+/* FORM */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;color:#888;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 11px;border-radius:7px;border:1.5px solid #e0d8f0;background:#fdfcff;color:#222;font-size:13px}
+.fg input:focus,.fg select:focus{outline:none;border-color:#6c3fc5}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2.5px dashed #c5b3e8;border-radius:10px;padding:30px;text-align:center;color:#9b8abf;background:#faf8ff;cursor:pointer;transition:all 0.2s}
+.upload-zone:hover,.upload-zone.drag{border-color:#6c3fc5;background:#f0eaf9;color:#6c3fc5}
+
+/* ALERT */
+.alert{border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.alert-info{background:#eaf4fb;border-left:4px solid #2980b9;color:#1a5276}
+.alert-success{background:#e9f7ef;border-left:4px solid #27ae60;color:#1a6636}
+.alert-danger{background:#fdecea;border-left:4px solid #e74c3c;color:#922b21}
+.alert-warning{background:#fef9e7;border-left:4px solid #f39c12;color:#7d6608}
+
+/* PROGRESS BAR */
+.progress-wrap{background:#f0f0f0;border-radius:6px;height:8px;overflow:hidden}
+.progress-fill{height:8px;border-radius:6px;transition:width 0.5s}
+
+/* SETTINGS PANEL */
+.settings-panel{background:linear-gradient(135deg,#f5f0ff,#fff);border:1.5px solid #d4c5f0;border-radius:10px;padding:16px 20px;margin-bottom:20px}
+
+/* SEARCH ROW */
+.search-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.search-input{padding:8px 14px;border-radius:8px;border:1.5px solid #e0d8f0;background:#fff;font-size:13px;min-width:200px}
+.search-input:focus{outline:none;border-color:#6c3fc5}
+
+/* ORDER QTY HIGHLIGHT */
+.order-qty-high{background:#6c3fc5;color:#fff;padding:4px 12px;border-radius:8px;font-weight:700;font-size:13px}
+.order-qty-zero{color:#27ae60;font-weight:600}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center}
+.modal-box{background:#fff;border-radius:14px;padding:24px;width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;color:#333;display:flex;justify-content:space-between;align-items:center}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:#e0d8f0}
+.tl-item{position:relative;margin-bottom:16px}
+.tl-dot{position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;border:2px solid #6c3fc5;background:#fff}
+.tl-dot.done{background:#6c3fc5}
+.tl-content{font-size:12px;color:#555}
+.tl-date{font-size:11px;color:#aaa}
+
+/* SETUP */
+.setup-wrap{max-width:520px;margin:60px auto;background:#fff;border-radius:14px;padding:36px;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+
+@media print{body>*:not(#print-area){display:none!important}#print-area{display:block!important}}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" style="padding:20px">
+  <div class="setup-wrap">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:40px">🇨🇳</div>
+      <h2 style="font-size:20px;font-weight:800;color:#1a1a2e;margin-top:8px">China Procurement Planner</h2>
+      <p style="font-size:13px;color:#888;margin-top:6px">Styleys India LLP — Pro Stock Management</p>
+    </div>
+    <div class="fg"><label>Supabase Project URL</label><input id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"/></div>
+    <div class="fg"><label>Supabase Anon Key</label><input id="sb-key" placeholder="eyJhbGci..."/></div>
+    <button class="btn btn-dark" style="width:100%;padding:12px;margin-top:8px;font-size:14px" onclick="connectDB()">🚀 Launch Planner</button>
+    <div id="setup-err" style="color:#c0392b;font-size:12px;margin-top:8px;text-align:center"></div>
+    <div style="margin-top:20px;background:#f5f0ff;border-radius:8px;padding:12px;font-size:11px;color:#666;line-height:1.8">
+      <b>Supabase mein yeh SQL run karo (ek baar):</b><br>
+      <code style="font-size:10px;color:#6c3fc5">CREATE TABLE IF NOT EXISTS china_stock (id bigserial primary key, sku text unique, item_name text, qty numeric default 0, monthly_sales text default '{}', updated_at timestamptz default now());</code><br>
+      <code style="font-size:10px;color:#6c3fc5">CREATE TABLE IF NOT EXISTS china_orders (id bigserial primary key, order_ref text, sku text, item_name text, category text, supplier text, unit text, qty_ordered numeric default 0, unit_cost numeric default 0, total_cost numeric default 0, currency text default 'CNY', order_date date, expected_date date, received_date date, status text default 'Pending', notes text, created_at timestamptz default now());</code><br>
+      <code style="font-size:10px;color:#6c3fc5">ALTER TABLE china_stock ENABLE ROW LEVEL SECURITY; ALTER TABLE china_orders ENABLE ROW LEVEL SECURITY; CREATE POLICY "all" ON china_stock FOR ALL USING (true) WITH CHECK (true); CREATE POLICY "all" ON china_orders FOR ALL USING (true) WITH CHECK (true);</code>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-left">
+      <span class="hdr-flag">🇨🇳</span>
+      <span class="hdr-brand">STYLEYS</span>
+      <span class="hdr-title">China Procurement Planner — Pro</span>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-chip" id="hdr-date"></span>
+      <span class="hdr-chip" id="hdr-benchmark">Benchmark: 3 Months</span>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)" onclick="logout()">Change DB</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('upload',this)">📤 Upload Data</button>
+    <button class="tab-btn" onclick="switchTab('runway',this)">📈 Stock Runway <span class="tab-badge" id="badge-critical">0</span></button>
+    <button class="tab-btn" onclick="switchTab('orders',this)">🛒 Purchase Orders <span class="tab-badge" id="badge-orders" style="background:#6c3fc5">0</span></button>
+    <button class="tab-btn" onclick="switchTab('tracker',this)">🚢 Shipment Tracker</button>
+    <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Settings</button>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <h1 style="font-size:20px;font-weight:800;color:#1a1a2e">Procurement Dashboard</h1>
+          <p style="font-size:13px;color:#888;margin-top:2px">3-Month stock benchmark • China lead time management</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="refreshAll()">🔄 Refresh</button>
+          <button class="btn btn-dark btn-sm" onclick="switchTab('runway',document.querySelector('.tab-btn:nth-child(3)'))">View Runway →</button>
+        </div>
+      </div>
+      <div class="summary-grid" id="dash-summary"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card" id="dash-urgent-card">
+          <div class="card-title">🚨 Urgent Orders Required <button class="btn btn-sm btn-primary" onclick="switchTab('runway',document.querySelector('.tab-btn:nth-child(3)'))">View All →</button></div>
+          <div id="dash-urgent-list"></div>
+        </div>
+        <div class="card" id="dash-orders-card">
+          <div class="card-title">📦 Active Purchase Orders <button class="btn btn-sm btn-secondary" onclick="switchTab('orders',document.querySelector('.tab-btn:nth-child(4)'))">View All →</button></div>
+          <div id="dash-orders-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Category-wise Stock Health</div>
+        <div id="dash-category-health"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div id="tab-upload" style="display:none">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700;color:#1a1a2e">Upload Stock & Sales Data</h2>
+        <p style="font-size:13px;color:#888;margin-top:4px">Item-wise current stock aur monthly sales upload karo</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-title">📦 Format 1 — Stock + Sales Combined</div>
+          <div class="alert alert-info" style="font-size:12px">
+            <b>Columns:</b> sku, item_name, qty, 2026-01, 2026-02, 2026-03...<br>
+            Ek hi file mein current stock aur monthly sales dono
+          </div>
+          <div class="upload-zone" onclick="document.getElementById('csv-combined').click()" id="zone-combined"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="handleDrop(event,'combined')">
+            <div style="font-size:32px;margin-bottom:8px">📊</div>
+            <p style="font-size:13px;font-weight:600">Combined CSV Upload</p>
+            <small>sku + qty + monthly sales</small>
+          </div>
+          <input type="file" id="csv-combined" accept=".csv" style="display:none" onchange="parseCSV(this.files[0],'combined')"/>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Format 2 — Separate Files</div>
+          <div style="margin-bottom:12px">
+            <div class="alert alert-info" style="font-size:12px"><b>Stock File:</b> sku, item_name, qty</div>
+            <div class="upload-zone" onclick="document.getElementById('csv-stock').click()" id="zone-stock"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="handleDrop(event,'stock')" style="padding:16px;margin-bottom:10px">
+              <div style="font-size:22px">📦</div>
+              <p style="font-size:12px;font-weight:600">Stock Only CSV</p>
+            </div>
+            <input type="file" id="csv-stock" accept=".csv" style="display:none" onchange="parseCSV(this.files[0],'stock')"/>
+            <div class="alert alert-info" style="font-size:12px"><b>Sales File:</b> sku, 2026-01, 2026-02...</div>
+            <div class="upload-zone" onclick="document.getElementById('csv-sales').click()" id="zone-sales"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="handleDrop(event,'sales')" style="padding:16px">
+              <div style="font-size:22px">📈</div>
+              <p style="font-size:12px;font-weight:600">Sales Only CSV</p>
+            </div>
+            <input type="file" id="csv-sales" accept=".csv" style="display:none" onchange="parseCSV(this.files[0],'sales')"/>
+          </div>
+        </div>
+      </div>
+
+      <div id="upload-preview"></div>
+
+      <div class="card">
+        <div class="card-title">⬇️ Download Sample Files</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="downloadSample('combined')">📊 Combined Sample</button>
+          <button class="btn btn-outline" onclick="downloadSample('stock')">📦 Stock Sample</button>
+          <button class="btn btn-outline" onclick="downloadSample('sales')">📈 Sales Sample</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗂️ Uploaded Data Status</div>
+        <div id="upload-status"></div>
+        <div style="margin-top:12px">
+          <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑️ Clear All Uploaded Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RUNWAY TAB -->
+    <div id="tab-runway" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:#1a1a2e">📈 Stock Runway Analysis</h2>
+          <p style="font-size:12px;color:#888">Kitne din mein stock khatam hoga + China se kitna mangwana hai</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="exportRunway()">⬇️ Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="bulkCreateOrders()">📋 Create Orders for Critical</button>
+        </div>
+      </div>
+
+      <div id="runway-summary-cards" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
+
+      <div class="settings-panel">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fg" style="margin:0;min-width:120px">
+            <label>Benchmark (Months)</label>
+            <input id="rw-bench" type="number" value="3" min="1" max="12" style="padding:6px 10px;border-radius:6px;border:1.5px solid #d4c5f0;font-size:13px;width:80px"/>
+          </div>
+          <div class="fg" style="margin:0;min-width:120px">
+            <label>Lead Time (Days)</label>
+            <input id="rw-lead" type="number" value="45" min="1" style="padding:6px 10px;border-radius:6px;border:1.5px solid #d4c5f0;font-size:13px;width:80px"/>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="renderRunwayTab()">Apply</button>
+          <div style="flex:1;min-width:160px">
+            <label style="font-size:11px;color:#888;display:block;margin-bottom:4px">SEARCH</label>
+            <input class="search-input" id="rw-search" placeholder="SKU / Name..." oninput="renderRunwayTable()" style="width:100%;font-size:12px;padding:6px 10px"/>
+          </div>
+          <select id="rw-filter" style="padding:6px 10px;border-radius:6px;border:1.5px solid #d4c5f0;font-size:12px" onchange="renderRunwayTable()">
+            <option value="">All Items</option>
+            <option value="critical">🔴 Critical (≤7d)</option>
+            <option value="urgent">🟠 Urgent (≤15d)</option>
+            <option value="warning">🟡 Warning (≤30d)</option>
+            <option value="safe">🟢 Safe</option>
+            <option value="order">📦 Needs Order</option>
+          </select>
+          <select id="rw-cat" style="padding:6px 10px;border-radius:6px;border:1.5px solid #d4c5f0;font-size:12px" onchange="renderRunwayTable()">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" id="chk-all" onchange="toggleAllCheck(this)"/></th>
+            <th>SKU</th><th>Item Name</th><th>Category</th>
+            <th style="text-align:center">Current Stock</th>
+            <th style="text-align:center">Avg/Month</th>
+            <th style="text-align:center">Daily Avg</th>
+            <th style="text-align:center">Days Left</th>
+            <th style="text-align:center">3M Target</th>
+            <th style="text-align:center">Lead Buffer</th>
+            <th style="text-align:center;background:#fff0e0;color:#d35400">🛒 Order Qty</th>
+            <th style="text-align:center">Priority</th>
+            <th>Action</th>
+          </tr></thead>
+          <tbody id="runway-tbody"></tbody>
+        </table>
+      </div>
+      <div id="rw-msg" style="text-align:center;padding:20px;color:#aaa;font-size:13px"></div>
+    </div>
+
+    <!-- PURCHASE ORDERS TAB -->
+    <div id="tab-orders" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:#1a1a2e">🛒 Purchase Orders</h2>
+          <p style="font-size:12px;color:#888">China se order karo aur track karo</p>
+        </div>
+        <button class="btn btn-primary" onclick="openOrderModal(null)">+ New Purchase Order</button>
+      </div>
+
+      <!-- Order Summary -->
+      <div id="order-summary-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px"></div>
+
+      <!-- Filters -->
+      <div class="search-row">
+        <input class="search-input" id="ord-search" placeholder="🔍 Search orders..." oninput="renderOrdersTable()"/>
+        <select id="ord-status-filter" style="padding:8px 12px;border-radius:8px;border:1.5px solid #e0d8f0;font-size:13px" onchange="renderOrdersTable()">
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Ordered">Ordered</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Received">Received</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportOrders()">⬇️ Export</button>
+      </div>
+
+      <div id="orders-list"></div>
+    </div>
+
+    <!-- TRACKER TAB -->
+    <div id="tab-tracker" style="display:none">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700;color:#1a1a2e">🚢 Shipment Tracker</h2>
+        <p style="font-size:12px;color:#888">Active shipments aur delivery timeline</p>
+      </div>
+      <div id="tracker-content"></div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" style="display:none">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700;color:#1a1a2e">⚙️ Settings</h2>
+      </div>
+      <div class="card">
+        <div class="card-title">Procurement Settings</div>
+        <div class="form-grid-2">
+          <div class="fg"><label>Stock Benchmark (Months)</label><input id="st-bench" type="number" value="3" min="1" max="12"/></div>
+          <div class="fg"><label>China Lead Time (Days)</label><input id="st-lead" type="number" value="45" min="1"/></div>
+          <div class="fg"><label>Safety Buffer (%)</label><input id="st-buffer" type="number" value="10" min="0" max="50"/></div>
+          <div class="fg"><label>Default Currency</label><select id="st-currency"><option>CNY</option><option>USD</option><option>INR</option></select></div>
+          <div class="fg"><label>Company Name</label><input id="st-company" value="Styleys India LLP"/></div>
+          <div class="fg"><label>Default Supplier</label><input id="st-supplier" placeholder="Default China supplier name"/></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        <span id="st-msg" style="margin-left:12px;font-size:13px;color:#27ae60"></span>
+      </div>
+      <div class="card">
+        <div class="card-title">Data Management</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="exportAllData()">⬇️ Export All Data</button>
+          <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑️ Clear Stock/Sales Data</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+<div id="order-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeOrderModal()">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span id="order-modal-title">New Purchase Order</span>
+      <button class="btn btn-sm btn-secondary" onclick="closeOrderModal()">✕ Close</button>
+    </div>
+    <div class="form-grid-2">
+      <div class="fg"><label>Order Ref # *</label><input id="om-ref" placeholder="e.g. PO-2026-001"/></div>
+      <div class="fg"><label>SKU *</label><input id="om-sku" placeholder="Item SKU"/></div>
+      <div class="fg"><label>Item Name *</label><input id="om-name" placeholder="Item description"/></div>
+      <div class="fg"><label>Category</label><input id="om-cat" placeholder="e.g. Fabric"/></div>
+      <div class="fg"><label>Supplier *</label><input id="om-supplier" placeholder="Supplier name"/></div>
+      <div class="fg"><label>Unit</label><select id="om-unit"><option>pcs</option><option>kg</option><option>meters</option><option>boxes</option><option>rolls</option><option>sets</option></select></div>
+      <div class="fg"><label>Qty to Order *</label><input id="om-qty" type="number" value="0" min="1"/></div>
+      <div class="fg"><label>Unit Cost</label><input id="om-cost" type="number" value="0" min="0" oninput="calcOrderTotal()"/></div>
+      <div class="fg"><label>Currency</label><select id="om-currency"><option>CNY</option><option>USD</option><option>INR</option></select></div>
+      <div class="fg"><label>Total Cost (Auto)</label><input id="om-total" readonly style="background:#f5f5f5"/></div>
+      <div class="fg"><label>Order Date</label><input id="om-odate" type="date"/></div>
+      <div class="fg"><label>Expected Delivery</label><input id="om-edate" type="date"/></div>
+      <div class="fg"><label>Status</label>
+        <select id="om-status">
+          <option>Pending</option><option>Confirmed</option><option>Ordered</option>
+          <option>Shipped</option><option>Received</option><option>Cancelled</option>
+        </select>
+      </div>
+      <div class="fg" style="grid-column:1/-1"><label>Notes / Remarks</label><textarea id="om-notes" rows="2" style="resize:none"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" onclick="saveOrder()">💾 Save Order</button>
+      <button class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
+    </div>
+    <div id="om-err" style="color:#c0392b;font-size:12px;margin-top:8px"></div>
+  </div>
+</div>
+
+<script>
+let sb=null;
+let chinaStock=[], chinaOrders=[];
+let editingOrderId=null;
+let allRunwayData=[];
+
+const cfg={bench:3,lead:45,buffer:10,currency:'CNY',company:'Styleys India LLP',supplier:''};
+
+// ── INIT ──────────────────────────────────────────────
+window.onload=()=>{
+  document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  loadCfg();
+  const u=localStorage.getItem('sb_url_china'),k=localStorage.getItem('sb_key_china');
+  if(u&&k) launch(u,k); else document.getElementById('setup-screen').style.display='block';
+};
+
+function loadCfg(){
+  cfg.bench=parseInt(localStorage.getItem('cp_bench')||'3');
+  cfg.lead=parseInt(localStorage.getItem('cp_lead')||'45');
+  cfg.buffer=parseInt(localStorage.getItem('cp_buffer')||'10');
+  cfg.currency=localStorage.getItem('cp_currency')||'CNY';
+  cfg.company=localStorage.getItem('cp_company')||'Styleys India LLP';
+  cfg.supplier=localStorage.getItem('cp_supplier')||'';
+  document.getElementById('hdr-benchmark').textContent=`Benchmark: ${cfg.bench} Months | Lead: ${cfg.lead}d`;
+}
+
+function connectDB(){
+  const u=document.getElementById('sb-url').value.trim(),k=document.getElementById('sb-key').value.trim();
+  if(!u||!k){document.getElementById('setup-err').textContent='Dono fields bharo.';return;}
+  localStorage.setItem('sb_url_china',u);localStorage.setItem('sb_key_china',k);launch(u,k);
+}
+async function launch(u,k){
+  sb=window.supabase.createClient(u,k);
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  await loadAll();
+}
+function logout(){localStorage.removeItem('sb_url_china');localStorage.removeItem('sb_key_china');location.reload();}
+
+async function loadAll(){
+  try{
+    const[a,b]=await Promise.all([
+      sb.from('china_stock').select('*').order('sku'),
+      sb.from('china_orders').select('*').order('id',{ascending:false})
+    ]);
+    if(a.error) throw new Error(a.error.message);
+    if(b.error) throw new Error(b.error.message);
+    chinaStock=a.data||[];chinaOrders=b.data||[];
+    buildRunwayData();
+    renderDashboard();renderUploadStatus();renderRunwayTab();renderOrdersTab();renderTracker();
+  }catch(e){alert('Load error: '+e.message);}
+}
+async function refreshAll(){await loadAll();}
+
+// ── TABS ──────────────────────────────────────────────
+function switchTab(name,el){
+  ['dashboard','upload','runway','orders','tracker','settings'].forEach(t=>{
+    const d=document.getElementById('tab-'+t);if(d) d.style.display='none';
+  });
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+
+// ── RUNWAY DATA ───────────────────────────────────────
+function buildRunwayData(){
+  allRunwayData=chinaStock.map(rec=>{
+    const sku=String(rec.sku||'').trim().toUpperCase();
+    const qty=Number(rec.qty)||0;
+    let ms={};try{ms=JSON.parse(rec.monthly_sales||'{}')}catch(e){}
+    const vals=Object.values(ms).map(Number).filter(v=>v>0);
+    const avgM=vals.length>0?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+    const dailyAvg=avgM/30;
+    const bufferFactor=1+(cfg.buffer/100);
+    const targetStock=Math.ceil(avgM*cfg.bench*bufferFactor);
+    const leadBuffer=Math.ceil(dailyAvg*cfg.lead);
+    const orderQty=Math.max(0,targetStock+leadBuffer-qty);
+    const daysLeft=dailyAvg>0?Math.round(qty/dailyAvg):null;
+    const urgency=daysLeft===null?'nodata':daysLeft<=7?'critical':daysLeft<=15?'urgent':daysLeft<=30?'warning':'safe';
+    return{sku,itemName:rec.item_name||sku,category:rec.category||'-',unit:rec.unit||'pcs',
+      qty,avgM:Math.round(avgM),dailyAvg:dailyAvg.toFixed(1),
+      daysLeft,targetStock,leadBuffer,orderQty,urgency,monthlySales:ms};
+  }).sort((a,b)=>{
+    const o={critical:0,urgent:1,warning:2,safe:3,nodata:4};
+    return(o[a.urgency]||5)-(o[b.urgency]||5);
+  });
+  // Update badges
+  const critical=allRunwayData.filter(r=>r.urgency==='critical'||r.urgency==='urgent').length;
+  const active=chinaOrders.filter(o=>!['Received','Cancelled'].includes(o.status)).length;
+  document.getElementById('badge-critical').textContent=critical;
+  document.getElementById('badge-orders').textContent=active;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────
+function renderDashboard(){
+  const critical=allRunwayData.filter(r=>r.urgency==='critical').length;
+  const urgent=allRunwayData.filter(r=>r.urgency==='urgent').length;
+  const warning=allRunwayData.filter(r=>r.urgency==='warning').length;
+  const safe=allRunwayData.filter(r=>r.urgency==='safe').length;
+  const totalOrderQty=allRunwayData.reduce((s,r)=>s+r.orderQty,0);
+  const activeOrders=chinaOrders.filter(o=>!['Received','Cancelled'].includes(o.status)).length;
+  const pendingReceive=chinaOrders.filter(o=>o.status==='Shipped').length;
+
+  document.getElementById('dash-summary').innerHTML=`
+    <div class="sum-card red"><div class="sum-label">🔴 Critical</div><div class="sum-value">${critical}</div><div class="sum-sub">≤7 days stock</div></div>
+    <div class="sum-card orange"><div class="sum-label">🟠 Urgent</div><div class="sum-value">${urgent}</div><div class="sum-sub">≤15 days stock</div></div>
+    <div class="sum-card yellow"><div class="sum-label">🟡 Warning</div><div class="sum-value">${warning}</div><div class="sum-sub">≤30 days stock</div></div>
+    <div class="sum-card green"><div class="sum-label">🟢 Safe</div><div class="sum-value">${safe}</div><div class="sum-sub">${cfg.bench}+ months</div></div>
+    <div class="sum-card purple"><div class="sum-label">📋 Active POs</div><div class="sum-value">${activeOrders}</div><div class="sum-sub">Purchase orders</div></div>
+    <div class="sum-card blue"><div class="sum-label">🚢 In Transit</div><div class="sum-value">${pendingReceive}</div><div class="sum-sub">Awaiting delivery</div></div>`;
+
+  // Urgent items
+  const urgentItems=allRunwayData.filter(r=>r.urgency==='critical'||r.urgency==='urgent').slice(0,6);
+  document.getElementById('dash-urgent-list').innerHTML=urgentItems.length===0
+    ?'<div style="text-align:center;padding:20px;color:#ccc;font-size:13px">✅ Koi urgent order nahi</div>'
+    :urgentItems.map(r=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f0ff">
+        <div>
+          <div style="font-weight:600;font-size:13px">${r.itemName}</div>
+          <div style="font-size:11px;color:#888">${r.sku} • ${r.qty} left • ${r.avgM}/mo avg</div>
+        </div>
+        <div style="text-align:right">
+          <span class="${r.urgency==='critical'?'p-critical':'p-urgent'}">${r.urgency==='critical'?`🔴 ${r.daysLeft}d`:`🟠 ${r.daysLeft}d`}</span>
+          <div style="font-size:11px;color:#6c3fc5;margin-top:3px;font-weight:600">Order: ${r.orderQty} ${r.unit}</div>
+        </div>
+      </div>`).join('');
+
+  // Active orders
+  const activeOrdersList=chinaOrders.filter(o=>!['Received','Cancelled'].includes(o.status)).slice(0,5);
+  document.getElementById('dash-orders-list').innerHTML=activeOrdersList.length===0
+    ?'<div style="text-align:center;padding:20px;color:#ccc;font-size:13px">Koi active order nahi</div>'
+    :activeOrdersList.map(o=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f0ff">
+        <div>
+          <div style="font-weight:600;font-size:13px">${o.item_name||o.sku}</div>
+          <div style="font-size:11px;color:#888">${o.order_ref} • ${o.supplier||'-'} • Qty: ${o.qty_ordered}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="s-${(o.status||'pending').toLowerCase()}">${o.status}</span>
+          ${o.expected_date?`<div style="font-size:11px;color:#aaa;margin-top:3px">ETA: ${o.expected_date}</div>`:''}
+        </div>
+      </div>`).join('');
+
+  // Category health
+  const cats=[...new Set(allRunwayData.map(r=>r.category).filter(c=>c&&c!=='-'))];
+  document.getElementById('dash-category-health').innerHTML=cats.length===0
+    ?'<div style="color:#ccc;text-align:center;padding:20px">Data upload karo</div>'
+    :cats.map(cat=>{
+      const catItems=allRunwayData.filter(r=>r.category===cat);
+      const crit=catItems.filter(r=>r.urgency==='critical').length;
+      const urg=catItems.filter(r=>r.urgency==='urgent').length;
+      const safe=catItems.filter(r=>r.urgency==='safe').length;
+      const total=catItems.length;
+      const healthPct=total>0?Math.round(safe/total*100):0;
+      const healthColor=healthPct>=70?'#27ae60':healthPct>=40?'#f39c12':'#e74c3c';
+      return`<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-weight:600;font-size:13px">${cat}</span>
+          <div style="display:flex;gap:8px;align-items:center;font-size:11px">
+            ${crit>0?`<span class="p-critical">${crit} critical</span>`:''}
+            ${urg>0?`<span class="p-urgent">${urg} urgent</span>`:''}
+            <span style="color:#888">${total} items</span>
+            <span style="font-weight:700;color:${healthColor}">${healthPct}% safe</span>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-fill" style="width:${healthPct}%;background:${healthColor}"></div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// ── UPLOAD ────────────────────────────────────────────
+function handleDrop(e,type){
+  e.preventDefault();
+  document.getElementById('zone-'+type)?.classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(file) parseCSV(file,type);
+}
+
+function parseCSV(file,type){
+  if(!file) return;
+  Papa.parse(file,{header:true,skipEmptyLines:true,dynamicTyping:true,complete:res=>{
+    showUploadPreview(res.data,type);
+  }});
+}
+
+function showUploadPreview(rows,type){
+  const prev=document.getElementById('upload-preview');
+  if(!rows.length){prev.innerHTML='<div class="alert alert-danger">Koi data nahi mila CSV mein.</div>';return;}
+  prev.innerHTML=`
+    <div class="card">
+      <div class="card-title">Preview — ${rows.length} rows found
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="importData(${JSON.stringify(rows).replace(/</g,'&lt;')},\'${type}\')">✅ Import ${rows.length} Records</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('upload-preview').innerHTML=''">Cancel</button>
+        </div>
+      </div>
+      <div class="tbl-wrap" style="max-height:240px;overflow-y:auto"><table>
+        <thead><tr>${Object.keys(rows[0]).slice(0,8).map(k=>`<th>${k}</th>`).join('')}</tr></thead>
+        <tbody>${rows.slice(0,8).map(r=>`<tr>${Object.values(r).slice(0,8).map(v=>`<td>${v||''}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>
+      ${rows.length>8?`<div style="font-size:12px;color:#aaa;padding:8px">...aur ${rows.length-8} rows</div>`:''}
+    </div>`;
+  // Store rows for import button
+  window._previewRows=rows;
+  window._previewType=type;
+  document.querySelector('#upload-preview .btn-primary').onclick=()=>importData(rows,type);
+}
+
+async function importData(rows,type){
+  const btn=document.querySelector('#upload-preview .btn-primary');
+  if(btn){btn.textContent='⏳ Importing...';btn.disabled=true;}
+  let ok=0,err=0;
+  const payload=[];
+
+  rows.forEach(r=>{
+    const sku=String(r.sku||r.SKU||'').trim().toUpperCase();
+    if(!sku) return;
+    const ms={};
+    Object.keys(r).forEach(k=>{
+      if(/^\d{4}-\d{2}$/.test(k.trim())&&r[k]!==null&&r[k]!==undefined&&r[k]!=='')
+        ms[k.trim()]=Number(r[k])||0;
+    });
+    const existing=payload.find(p=>p.sku===sku);
+    if(existing){
+      if(type!=='sales') existing.qty=Number(r.qty||r.QTY||r.stock||existing.qty)||0;
+      const existMs=JSON.parse(existing.monthly_sales||'{}');
+      Object.assign(existMs,ms);
+      existing.monthly_sales=JSON.stringify(existMs);
+    } else {
+      payload.push({
+        sku,
+        item_name:String(r.item_name||r.name||r.NAME||'').trim()||sku,
+        category:String(r.category||r.CATEGORY||'').trim()||'-',
+        unit:String(r.unit||'pcs').trim(),
+        qty:type==='sales'?undefined:Number(r.qty||r.QTY||r.stock||0)||0,
+        monthly_sales:JSON.stringify(ms),
+        updated_at:new Date().toISOString()
+      });
+    }
+  });
+
+  // Remove qty if sales only
+  if(type==='sales') payload.forEach(p=>delete p.qty);
+
+  // Upsert in batches of 50
+  const batches=[];
+  for(let i=0;i<payload.length;i+=50) batches.push(payload.slice(i,i+50));
+  for(const batch of batches){
+    const toUpsert=batch.map(p=>{
+      if(p.qty===undefined){
+        const existing=chinaStock.find(s=>s.sku===p.sku);
+        p.qty=existing?existing.qty:0;
+      }
+      return p;
+    });
+    const{error}=await sb.from('china_stock').upsert(toUpsert,{onConflict:'sku'});
+    if(error) err+=batch.length; else ok+=batch.length;
+  }
+
+  document.getElementById('upload-preview').innerHTML=`
+    <div class="alert alert-success">✅ ${ok} SKUs imported successfully! ${err>0?`(${err} errors)`:''}</div>`;
+  await loadAll();
+}
+
+function renderUploadStatus(){
+  const el=document.getElementById('upload-status');if(!el) return;
+  if(!chinaStock.length){el.innerHTML='<div style="color:#aaa;font-size:13px">Koi data upload nahi hua abhi tak.</div>';return;}
+  const withSales=chinaStock.filter(s=>{
+    try{return Object.keys(JSON.parse(s.monthly_sales||'{}')).length>0}catch(e){return false;}
+  }).length;
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="background:#f5f0ff;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#6c3fc5">${chinaStock.length}</div>
+        <div style="font-size:12px;color:#888">Total SKUs</div>
+      </div>
+      <div style="background:#e9f7ef;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#27ae60">${withSales}</div>
+        <div style="font-size:12px;color:#888">With Sales Data</div>
+      </div>
+      <div style="background:#eaf4fb;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#2980b9">${chinaStock.length-withSales}</div>
+        <div style="font-size:12px;color:#888">Stock Only</div>
+      </div>
+    </div>`;
+}
+
+async function clearAllData(){
+  if(!confirm('Saara china_stock data delete karna chahte ho?')) return;
+  await sb.from('china_stock').delete().neq('id',0);
+  await loadAll();
+}
+
+function downloadSample(type){
+  const months=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
+  let csv='';
+  if(type==='combined'){
+    csv=`sku,item_name,category,qty,unit,${months.join(',')}\nFAB-001,Cotton Fabric,Fabric,150,meters,80,90,85,95,100,110\nACC-001,Metal Buttons,Accessories,800,pcs,200,180,220,190,210,230\nPKG-001,Poly Bags,Packaging,500,pcs,150,160,140,170,155,165`;
+  } else if(type==='stock'){
+    csv=`sku,item_name,category,qty,unit\nFAB-001,Cotton Fabric,Fabric,150,meters\nACC-001,Metal Buttons,Accessories,800,pcs`;
+  } else {
+    csv=`sku,${months.join(',')}\nFAB-001,80,90,85,95,100,110\nACC-001,200,180,220,190,210,230`;
+  }
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`china_${type}_sample.csv`;a.click();
+}
+
+// ── RUNWAY ────────────────────────────────────────────
+function renderRunwayTab(){
+  // Update category filter
+  const cats=[...new Set(allRunwayData.map(r=>r.category).filter(c=>c&&c!=='-'))];
+  const catSel=document.getElementById('rw-cat');
+  if(catSel){
+    catSel.innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  }
+  // Update settings inputs
+  const bench=document.getElementById('rw-bench');const lead=document.getElementById('rw-lead');
+  if(bench) bench.value=cfg.bench;if(lead) lead.value=cfg.lead;
+  // Summary cards
+  const critical=allRunwayData.filter(r=>r.urgency==='critical').length;
+  const urgent=allRunwayData.filter(r=>r.urgency==='urgent').length;
+  const warning=allRunwayData.filter(r=>r.urgency==='warning').length;
+  const safe=allRunwayData.filter(r=>r.urgency==='safe').length;
+  const totalOrder=allRunwayData.reduce((s,r)=>s+r.orderQty,0);
+  document.getElementById('runway-summary-cards').innerHTML=`
+    <div class="sum-card red"><div class="sum-label">🔴 Critical</div><div class="sum-value">${critical}</div><div class="sum-sub">Order karo aaj</div></div>
+    <div class="sum-card orange"><div class="sum-label">🟠 Urgent</div><div class="sum-value">${urgent}</div><div class="sum-sub">Is hafte order karo</div></div>
+    <div class="sum-card yellow"><div class="sum-label">🟡 Warning</div><div class="sum-value">${warning}</div><div class="sum-sub">Plan karo</div></div>
+    <div class="sum-card green"><div class="sum-label">🟢 Safe</div><div class="sum-value">${safe}</div><div class="sum-sub">${cfg.bench}m+ stock hai</div></div>
+    <div class="sum-card purple"><div class="sum-label">📦 Total Order</div><div class="sum-value">${totalOrder.toLocaleString('en-IN')}</div><div class="sum-sub">Units needed</div></div>`;
+  renderRunwayTable();
+}
+
+function renderRunwayTable(){
+  // Apply benchmark/lead from settings inputs
+  const newBench=parseInt(document.getElementById('rw-bench')?.value||cfg.bench);
+  const newLead=parseInt(document.getElementById('rw-lead')?.value||cfg.lead);
+  if(newBench!==cfg.bench||newLead!==cfg.lead){cfg.bench=newBench;cfg.lead=newLead;buildRunwayData();}
+
+  const q=(document.getElementById('rw-search')?.value||'').toLowerCase();
+  const filt=document.getElementById('rw-filter')?.value||'';
+  const cat=document.getElementById('rw-cat')?.value||'';
+
+  let data=allRunwayData.filter(r=>{
+    const ms=!q||r.sku.toLowerCase().includes(q)||r.itemName.toLowerCase().includes(q);
+    const mf=!filt||(filt==='order'&&r.orderQty>0)||r.urgency===filt;
+    const mc=!cat||r.category===cat;
+    return ms&&mf&&mc;
+  });
+
+  const tbody=document.getElementById('runway-tbody');
+  const msg=document.getElementById('rw-msg');
+  if(!tbody) return;
+
+  if(!chinaStock.length){
+    tbody.innerHTML='';
+    if(msg) msg.innerHTML='<div style="padding:40px"><div style="font-size:36px;margin-bottom:12px">📤</div>Pehle Upload Data tab mein data upload karo.</div>';
+    return;
+  }
+  if(msg) msg.textContent='';
+
+  tbody.innerHTML=data.map(r=>{
+    const pBadge=r.urgency==='critical'?`<span class="p-critical">🔴 ${r.daysLeft}d</span>`:
+      r.urgency==='urgent'?`<span class="p-urgent">🟠 ${r.daysLeft}d</span>`:
+      r.urgency==='warning'?`<span class="p-warning">🟡 ${r.daysLeft}d</span>`:
+      r.urgency==='safe'?`<span class="p-safe">🟢 ${r.daysLeft}d</span>`:
+      `<span class="p-nodata">—</span>`;
+    const qtyColor=r.qty===0?'#e74c3c':r.urgency==='critical'?'#e74c3c':r.urgency==='urgent'?'#e67e22':'#222';
+    return`<tr>
+      <td><input type="checkbox" class="rw-chk" value="${r.sku}"/></td>
+      <td style="font-weight:700;color:#6c3fc5;font-size:12px">${r.sku}</td>
+      <td style="font-weight:600">${r.itemName}</td>
+      <td style="font-size:12px;color:#888">${r.category}</td>
+      <td style="text-align:center;font-weight:700;color:${qtyColor}">${r.qty} <span style="font-size:11px;color:#aaa">${r.unit}</span></td>
+      <td style="text-align:center">${r.avgM||'—'}</td>
+      <td style="text-align:center;font-size:12px;color:#888">${r.avgM>0?r.dailyAvg:'—'}</td>
+      <td style="text-align:center">${r.daysLeft!==null?`<b>${r.daysLeft}</b>`:—}</td>
+      <td style="text-align:center;color:#6c3fc5">${r.targetStock} ${r.unit}</td>
+      <td style="text-align:center;font-size:12px;color:#888">${r.avgM>0?r.leadBuffer+' '+r.unit:'—'}</td>
+      <td style="text-align:center">
+        ${r.orderQty>0?`<span class="order-qty-high">${r.orderQty} ${r.unit}</span>`:
+          `<span class="order-qty-zero">✅ OK</span>`}
+      </td>
+      <td style="text-align:center">${pBadge}</td>
+      <td>
+        ${r.orderQty>0?`<button class="btn btn-sm btn-primary" onclick="quickCreateOrder('${r.sku}','${r.itemName}',${r.orderQty},'${r.unit}','${r.category}')">+ Order</button>`:''}
+      </td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="13" style="text-align:center;padding:24px;color:#ccc">Koi item nahi mila filter ke saath</td></tr>`;
+}
+
+function toggleAllCheck(el){
+  document.querySelectorAll('.rw-chk').forEach(c=>c.checked=el.checked);
+}
+
+function bulkCreateOrders(){
+  const checked=[...document.querySelectorAll('.rw-chk:checked')].map(c=>c.value);
+  if(!checked.length){alert('Pehle kuch items select karo (checkbox se)');return;}
+  const items=allRunwayData.filter(r=>checked.includes(r.sku)&&r.orderQty>0);
+  if(!items.length){alert('Selected items mein koi order needed nahi hai');return;}
+  if(!confirm(`${items.length} items ke liye bulk purchase orders create karein?`)) return;
+  Promise.all(items.map(r=>createOrderDirect(r.sku,r.itemName,r.orderQty,r.unit,r.category)))
+    .then(()=>loadAll())
+    .then(()=>{alert(`✅ ${items.length} orders created!`);switchTab('orders',document.querySelector('.tab-btn:nth-child(4)'));});
+}
+
+async function createOrderDirect(sku,name,qty,unit,cat){
+  const today=new Date().toISOString().slice(0,10);
+  const eta=new Date(Date.now()+cfg.lead*86400000).toISOString().slice(0,10);
+  await sb.from('china_orders').insert({
+    order_ref:'PO-'+Date.now().toString().slice(-6),
+    sku,item_name:name,category:cat||'-',
+    supplier:cfg.supplier||'TBD',unit:unit||'pcs',
+    qty_ordered:qty,unit_cost:0,total_cost:0,
+    currency:cfg.currency,order_date:today,
+    expected_date:eta,status:'Pending',notes:'Auto-created from runway analysis'
+  });
+}
+
+function quickCreateOrder(sku,name,qty,unit,cat){
+  openOrderModal(null,{sku,name,qty,unit,cat});
+}
+
+function exportRunway(){
+  const data=allRunwayData;
+  const hdr='SKU,Item Name,Category,Unit,Current Stock,Avg Monthly,Daily Avg,Days Left,3M Target,Lead Buffer,Order Qty,Priority';
+  const rows=data.map(r=>[r.sku,r.itemName,r.category,r.unit,r.qty,r.avgM,r.dailyAvg,r.daysLeft||'',r.targetStock,r.leadBuffer,r.orderQty,r.urgency].map(v=>`"${v}"`).join(','));
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+'\n'+rows.join('\n'));
+  a.download='china_runway.csv';a.click();
+}
+
+// ── ORDERS ────────────────────────────────────────────
+function renderOrdersTab(){
+  // Summary row
+  const statuses=['Pending','Confirmed','Ordered','Shipped','Received','Cancelled'];
+  const colors={Pending:'orange',Confirmed:'blue',Ordered:'purple',Shipped:'yellow',Received:'green',Cancelled:'red'};
+  document.getElementById('order-summary-row').innerHTML=statuses.map(s=>{
+    const cnt=chinaOrders.filter(o=>o.status===s).length;
+    return`<div class="sum-card ${colors[s]||'purple'}"><div class="sum-label">${s}</div><div class="sum-value">${cnt}</div></div>`;
+  }).join('');
+  renderOrdersTable();
+}
+
+function renderOrdersTable(){
+  const q=(document.getElementById('ord-search')?.value||'').toLowerCase();
+  const sf=document.getElementById('ord-status-filter')?.value||'';
+  const filtered=chinaOrders.filter(o=>{
+    const ms=!q||o.item_name?.toLowerCase().includes(q)||o.sku?.toLowerCase().includes(q)||o.order_ref?.toLowerCase().includes(q)||o.supplier?.toLowerCase().includes(q);
+    const mf=!sf||o.status===sf;
+    return ms&&mf;
+  });
+  document.getElementById('orders-list').innerHTML=filtered.length===0
+    ?'<div style="text-align:center;padding:40px;color:#ccc">Koi orders nahi</div>'
+    :filtered.map(o=>{
+      const statusClass=`s-${(o.status||'pending').toLowerCase()}`;
+      const totalCost=Number(o.total_cost||0);
+      const today=new Date();
+      const eta=o.expected_date?new Date(o.expected_date):null;
+      const daysToEta=eta?Math.ceil((eta-today)/86400000):null;
+      const isLate=daysToEta!==null&&daysToEta<0&&o.status!=='Received'&&o.status!=='Cancelled';
+      return`<div class="card" style="margin-bottom:12px;border-left:4px solid ${isLate?'#e74c3c':o.status==='Received'?'#27ae60':o.status==='Shipped'?'#f39c12':'#6c3fc5'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-weight:800;font-size:15px;color:#1a1a2e">${o.order_ref}</span>
+              <span class="${statusClass}">${o.status}</span>
+              ${isLate?'<span style="background:#fdecea;color:#c0392b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">⚠️ OVERDUE</span>':''}
+            </div>
+            <div style="margin-top:6px;font-size:13px;font-weight:600">${o.item_name||'-'}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px">SKU: ${o.sku} | Category: ${o.category||'-'} | Supplier: ${o.supplier||'-'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:800;color:#6c3fc5">${o.qty_ordered} <span style="font-size:13px;color:#888">${o.unit}</span></div>
+            ${totalCost>0?`<div style="font-size:12px;color:#888">${o.currency} ${totalCost.toLocaleString()}</div>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:#888">
+          ${o.order_date?`<span>📅 Ordered: <b>${o.order_date}</b></span>`:''}
+          ${o.expected_date?`<span>🚢 ETA: <b style="color:${isLate?'#e74c3c':daysToEta&&daysToEta<=7?'#e67e22':'#333'}">${o.expected_date}</b>${daysToEta!==null&&o.status!=='Received'?` (${daysToEta<0?Math.abs(daysToEta)+' days overdue':daysToEta+' days left'})`:''}
+          </span>`:''}
+          ${o.received_date?`<span>✅ Received: <b>${o.received_date}</b></span>`:''}
+          ${o.notes?`<span>📝 ${o.notes}</span>`:''}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          ${getStatusButtons(o)}
+          <button class="btn btn-sm btn-secondary" onclick="openOrderModal(${o.id})">✏️ Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteOrder(${o.id})">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function getStatusButtons(o){
+  const flow={Pending:'Confirmed',Confirmed:'Ordered',Ordered:'Shipped',Shipped:'Received'};
+  const next=flow[o.status];
+  if(!next) return '';
+  const colors={Confirmed:'btn-secondary',Ordered:'btn-outline',Shipped:'btn-success',Received:'btn-success'};
+  const icons={Confirmed:'✓',Ordered:'📋',Shipped:'🚢',Received:'✅'};
+  return`<button class="btn btn-sm ${colors[next]||'btn-secondary'}" onclick="updateOrderStatus(${o.id},'${next}')">${icons[next]||''} Mark ${next}</button>`;
+}
+
+async function updateOrderStatus(id,status){
+  const updates={status};
+  if(status==='Received') updates.received_date=new Date().toISOString().slice(0,10);
+  const{error}=await sb.from('china_orders').update(updates).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+
+  // If received, update inventory stock
+  if(status==='Received'){
+    const order=chinaOrders.find(o=>o.id===id);
+    if(order&&order.sku){
+      const stockRec=chinaStock.find(s=>s.sku===order.sku.toUpperCase());
+      if(stockRec){
+        const newQty=Number(stockRec.qty)+Number(order.qty_ordered);
+        await sb.from('china_stock').update({qty:newQty,updated_at:new Date().toISOString()}).eq('sku',order.sku.toUpperCase());
+      }
+    }
+  }
+  await loadAll();
+}
+
+async function deleteOrder(id){
+  if(!confirm('Delete this order?')) return;
+  await sb.from('china_orders').delete().eq('id',id);
+  await loadAll();
+}
+
+function exportOrders(){
+  const hdr='Order Ref,SKU,Item Name,Category,Supplier,Unit,Qty,Unit Cost,Total Cost,Currency,Order Date,Expected Date,Received Date,Status,Notes';
+  const rows=chinaOrders.map(o=>[o.order_ref,o.sku,o.item_name,o.category,o.supplier,o.unit,o.qty_ordered,o.unit_cost,o.total_cost,o.currency,o.order_date,o.expected_date,o.received_date,o.status,o.notes||''].map(v=>`"${v||''}"`).join(','));
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+'\n'+rows.join('\n'));
+  a.download='china_orders.csv';a.click();
+}
+
+// ── ORDER MODAL ───────────────────────────────────────
+function openOrderModal(id,prefill){
+  editingOrderId=id;
+  const order=id?chinaOrders.find(o=>o.id===id):null;
+  const today=new Date().toISOString().slice(0,10);
+  const eta=new Date(Date.now()+cfg.lead*86400000).toISOString().slice(0,10);
+  const nextRef='PO-'+new Date().getFullYear()+'-'+String(chinaOrders.length+1).padStart(3,'0');
+  document.getElementById('order-modal-title').textContent=id?'Edit Purchase Order':'New Purchase Order';
+  document.getElementById('om-ref').value=order?.order_ref||nextRef;
+  document.getElementById('om-sku').value=order?.sku||prefill?.sku||'';
+  document.getElementById('om-name').value=order?.item_name||prefill?.name||'';
+  document.getElementById('om-cat').value=order?.category||prefill?.cat||'';
+  document.getElementById('om-supplier').value=order?.supplier||cfg.supplier||'';
+  document.getElementById('om-unit').value=order?.unit||prefill?.unit||'pcs';
+  document.getElementById('om-qty').value=order?.qty_ordered||prefill?.qty||0;
+  document.getElementById('om-cost').value=order?.unit_cost||0;
+  document.getElementById('om-currency').value=order?.currency||cfg.currency||'CNY';
+  document.getElementById('om-total').value=order?.total_cost||0;
+  document.getElementById('om-odate').value=order?.order_date||today;
+  document.getElementById('om-edate').value=order?.expected_date||eta;
+  document.getElementById('om-status').value=order?.status||'Pending';
+  document.getElementById('om-notes').value=order?.notes||'';
+  document.getElementById('om-err').textContent='';
+  document.getElementById('order-modal').style.display='flex';
+}
+
+function closeOrderModal(){document.getElementById('order-modal').style.display='none';}
+
+function calcOrderTotal(){
+  const qty=Number(document.getElementById('om-qty').value)||0;
+  const cost=Number(document.getElementById('om-cost').value)||0;
+  document.getElementById('om-total').value=(qty*cost).toFixed(2);
+}
+
+async function saveOrder(){
+  const ref=document.getElementById('om-ref').value.trim();
+  const sku=document.getElementById('om-sku').value.trim().toUpperCase();
+  const name=document.getElementById('om-name').value.trim();
+  const supplier=document.getElementById('om-supplier').value.trim();
+  const qty=Number(document.getElementById('om-qty').value)||0;
+  const cost=Number(document.getElementById('om-cost').value)||0;
+  const errEl=document.getElementById('om-err');
+  errEl.textContent='';
+  if(!ref||!sku||!name||!supplier){errEl.textContent='❌ Ref, SKU, Name aur Supplier required hai!';return;}
+  if(qty<=0){errEl.textContent='❌ Qty 0 se zyada honi chahiye!';return;}
+  const data={
+    order_ref:ref,sku,item_name:name,
+    category:document.getElementById('om-cat').value.trim()||'-',
+    supplier,unit:document.getElementById('om-unit').value,
+    qty_ordered:qty,unit_cost:cost,total_cost:qty*cost,
+    currency:document.getElementById('om-currency').value,
+    order_date:document.getElementById('om-odate').value,
+    expected_date:document.getElementById('om-edate').value,
+    status:document.getElementById('om-status').value,
+    notes:document.getElementById('om-notes').value.trim()
+  };
+  let error;
+  if(editingOrderId){({error}=await sb.from('china_orders').update(data).eq('id',editingOrderId));}
+  else{({error}=await sb.from('china_orders').insert(data));}
+  if(error){errEl.textContent='❌ Error: '+error.message;return;}
+  closeOrderModal();await loadAll();
+}
+
+// ── TRACKER ───────────────────────────────────────────
+function renderTracker(){
+  const active=chinaOrders.filter(o=>!['Received','Cancelled'].includes(o.status));
+  const el=document.getElementById('tracker-content');if(!el) return;
+  if(!active.length){
+    el.innerHTML='<div style="text-align:center;padding:60px;color:#ccc"><div style="font-size:48px;margin-bottom:16px">🚢</div><div style="font-size:15px">Koi active shipment nahi</div><button class="btn btn-primary" style="margin-top:16px" onclick="openOrderModal(null)">+ Create Order</button></div>';
+    return;
+  }
+  el.innerHTML=active.map(o=>{
+    const stages=['Pending','Confirmed','Ordered','Shipped','Received'];
+    const curIdx=stages.indexOf(o.status);
+    const today=new Date();
+    const eta=o.expected_date?new Date(o.expected_date):null;
+    const daysLeft=eta?Math.ceil((eta-today)/86400000):null;
+    return`<div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <span style="font-weight:800;font-size:15px">${o.order_ref}</span>
+          <span style="margin-left:10px;font-size:13px;color:#666">${o.item_name}</span>
+          <span style="margin-left:8px;font-size:12px;color:#888">SKU: ${o.sku}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:700;color:#6c3fc5">${o.qty_ordered} ${o.unit}</div>
+          ${daysLeft!==null?`<div style="font-size:12px;color:${daysLeft<0?'#e74c3c':daysLeft<=7?'#e67e22':'#27ae60'};font-weight:600">
+            ${daysLeft<0?`⚠️ ${Math.abs(daysLeft)} days overdue`:daysLeft===0?'📦 Due today!':daysLeft<=7?`🚨 ${daysLeft} days left`:`${daysLeft} days to ETA`}
+          </div>`:''}
+        </div>
+      </div>
+      <!-- Progress Timeline -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;position:relative">
+        <div style="position:absolute;top:14px;left:14px;right:14px;height:3px;background:#e0d8f0;z-index:0"></div>
+        <div style="position:absolute;top:14px;left:14px;height:3px;background:#6c3fc5;z-index:1;width:${Math.max(0,curIdx/4*100)}%;transition:width 0.5s"></div>
+        ${stages.map((s,i)=>`
+          <div style="display:flex;flex-direction:column;align-items:center;z-index:2">
+            <div style="width:28px;height:28px;border-radius:50%;border:3px solid ${i<=curIdx?'#6c3fc5':'#e0d8f0'};background:${i<curIdx?'#6c3fc5':i===curIdx?'#fff':'#fff'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${i<=curIdx?'#6c3fc5':'#ccc'}">
+              ${i<curIdx?'✓':i+1}
+            </div>
+            <div style="font-size:10px;margin-top:4px;color:${i<=curIdx?'#6c3fc5':'#ccc'};font-weight:${i===curIdx?700:400};white-space:nowrap">${s}</div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        ${getStatusButtons(o)}
+        <button class="btn btn-sm btn-secondary" onclick="openOrderModal(${o.id})">✏️ Edit</button>
+        ${o.supplier?`<span style="font-size:12px;color:#888;display:flex;align-items:center">📦 ${o.supplier}</span>`:''}
+        ${o.expected_date?`<span style="font-size:12px;color:#888;display:flex;align-items:center">🗓️ ETA: ${o.expected_date}</span>`:''}
+        ${o.notes?`<span style="font-size:12px;color:#aaa;display:flex;align-items:center">📝 ${o.notes}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SETTINGS ──────────────────────────────────────────
+function renderSettingsTab(){
+  document.getElementById('st-bench').value=cfg.bench;
+  document.getElementById('st-lead').value=cfg.lead;
+  document.getElementById('st-buffer').value=cfg.buffer;
+  document.getElementById('st-currency').value=cfg.currency;
+  document.getElementById('st-company').value=cfg.company;
+  document.getElementById('st-supplier').value=cfg.supplier;
+}
+
+function saveSettings(){
+  cfg.bench=parseInt(document.getElementById('st-bench').value)||3;
+  cfg.lead=parseInt(document.getElementById('st-lead').value)||45;
+  cfg.buffer=parseInt(document.getElementById('st-buffer').value)||10;
+  cfg.currency=document.getElementById('st-currency').value||'CNY';
+  cfg.company=document.getElementById('st-company').value.trim()||'Styleys India LLP';
+  cfg.supplier=document.getElementById('st-supplier').value.trim()||'';
+  localStorage.setItem('cp_bench',cfg.bench);
+  localStorage.setItem('cp_lead',cfg.lead);
+  localStorage.setItem('cp_buffer',cfg.buffer);
+  localStorage.setItem('cp_currency',cfg.currency);
+  localStorage.setItem('cp_company',cfg.company);
+  localStorage.setItem('cp_supplier',cfg.supplier);
+  document.getElementById('hdr-benchmark').textContent=`Benchmark: ${cfg.bench} Months | Lead: ${cfg.lead}d`;
+  document.getElementById('st-msg').textContent='✅ Settings saved!';
+  setTimeout(()=>document.getElementById('st-msg').textContent='',3000);
+  buildRunwayData();renderDashboard();renderRunwayTab();
+}
+
+function exportAllData(){
+  const data={chinaStock,chinaOrders,settings:cfg,exported:new Date().toISOString()};
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
+  a.download='styleys_china_planner_backup.json';a.click();
+}
+</script>
+</body>
+</html>
