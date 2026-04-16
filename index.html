@@ -354,8 +354,8 @@ tr:hover td{background:#fdf9ff}
             <th style="text-align:center">Avg/Month</th>
             <th style="text-align:center">Daily Avg</th>
             <th style="text-align:center">Days Left</th>
-            <th style="text-align:center">3M Target</th>
-            <th style="text-align:center">Lead Buffer</th>
+            <th id="rw-target-head" style="text-align:center">3M Target</th>
+            <th id="rw-buffer-head" style="text-align:center">Lead Buffer</th>
             <th style="text-align:center;background:#fff0e0;color:#d35400">🛒 Order Qty</th>
             <th style="text-align:center">Priority</th>
             <th>Action</th>
@@ -416,7 +416,11 @@ tr:hover td{background:#fdf9ff}
         <div class="form-grid-2">
           <div class="fg"><label>Stock Benchmark (Months)</label><input id="st-bench" type="number" value="3" min="1" max="12"/></div>
           <div class="fg"><label>China Lead Time (Days)</label><input id="st-lead" type="number" value="45" min="1"/></div>
-          <div class="fg"><label>Safety Buffer (%)</label><input id="st-buffer" type="number" value="10" min="0" max="50"/></div>
+          <div class="fg">
+            <label>Safety Buffer (%)</label>
+            <input id="st-buffer" type="number" value="10" min="0" max="50"/>
+            <div style="font-size:11px;color:#888;margin-top:4px">Runway target aur lead buffer dono par apply hota hai.</div>
+          </div>
           <div class="fg"><label>Default Currency</label><select id="st-currency"><option>CNY</option><option>USD</option><option>INR</option></select></div>
           <div class="fg"><label>Company Name</label><input id="st-company" value="Styleys India LLP"/></div>
           <div class="fg"><label>Default Supplier</label><input id="st-supplier" placeholder="Default China supplier name"/></div>
@@ -569,7 +573,7 @@ function buildRunwayData(){
     const dailyAvg=avgM/30;
     const bufferFactor=1+(cfg.buffer/100);
     const targetStock=Math.ceil(avgM*cfg.bench*bufferFactor);
-    const leadBuffer=Math.ceil(dailyAvg*cfg.lead);
+    const leadBuffer=Math.ceil(dailyAvg*cfg.lead*bufferFactor);
     const orderQty=Math.max(0,targetStock+leadBuffer-qty);
     const daysLeft=dailyAvg>0?Math.round(qty/dailyAvg):null;
     const urgency=daysLeft===null?'nodata':daysLeft<=7?'critical':daysLeft<=15?'urgent':daysLeft<=30?'warning':'safe';
@@ -816,6 +820,10 @@ function renderRunwayTab(){
   // Update settings inputs
   const bench=document.getElementById('rw-bench');const lead=document.getElementById('rw-lead');
   if(bench) bench.value=cfg.bench;if(lead) lead.value=cfg.lead;
+  const targetHead=document.getElementById('rw-target-head');
+  const bufferHead=document.getElementById('rw-buffer-head');
+  if(targetHead) targetHead.textContent=`${cfg.bench}M Target (+${cfg.buffer}%)`;
+  if(bufferHead) bufferHead.textContent=`Lead Buffer (${cfg.lead}d, +${cfg.buffer}%)`;
   // Summary cards
   const critical=allRunwayData.filter(r=>r.urgency==='critical').length;
   const urgent=allRunwayData.filter(r=>r.urgency==='urgent').length;
